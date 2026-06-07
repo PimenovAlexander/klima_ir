@@ -1,70 +1,69 @@
 # Beko AC IR Control — Home Assistant Integration
 
-This is a heavy WIP for Beko 31225/30925 control with IR-blaster Moes UFO-R11 (Zigbee).
-Two problems are solved 
+Home Assistant integration for Beko 31225 / 30925 air conditioners via Zigbee IR blaster (Moes UFO-R11).
 
-  * Encode logical state into IR-blaster format
-  * Intergrate solution with HA
+Two problems are solved:
+- Encoding logical AC state into the IR blaster wire format
+- Integrating the solution with Home Assistant
 
-Disclamer. I use a lot of AI in this project, you will see artefacts of it. That's just as life is now. 
+> This project makes heavy use of AI tooling. You will see artefacts of that. That's just life now.
 
-## Протокол
+## Protocol
 
-Полная документация IR-протокола Beko 31225/30925 — фреймы, тайминги, кодировка, верифицированные значения: [PROTOCOL.md](PROTOCOL.md)
+Full IR protocol documentation for Beko 31225 / 30925 — frames, timings, encoding, verified hex values: [PROTOCOL.md](PROTOCOL.md)
 
-## Требования
+## Requirements
 
-- Home Assistant с интеграцией MQTT
+- Home Assistant with MQTT integration
 - Zigbee2MQTT
-- pyscript custom component (`hacs` или вручную)
+- pyscript custom component (via HACS or manual install)
 
-## Сложности
+## Why buttons instead of a climate entity
 
- Система совершенно спокойно может быть переписана для того что управлять ей с виджета clima,
- но только есть неудобство в виде того что нельзя повторить с UI посылку уже отправленного состояния
- с этим связано то что я собираю dashboard из кнопок.
-    Возможно я что-то не изучил до конца
+Home Assistant's climate card has a guard that prevents re-sending a command if the UI state
+already matches the selected value (`value === oldValue`). Since Beko ACs give no feedback over IR,
+the UI state can drift from the real AC state (e.g. someone used the physical remote).
+A button-based dashboard has no such guard — every tap always sends the IR signal.
 
+## Files
 
-## Файлы
+| File | Purpose |
+|------|---------|
+| `beko_ir.py` | pyscript — IR frame generation and MQTT triggers |
+| `beko.yaml` | HA package — buttons, switches, input_number entities |
+| `configuration.yaml` | Example configuration.yaml with package include |
+| `lovelace-beko.yaml` | Lovelace dashboard for two AC units |
 
-| Файл | Назначение |
-|------|-----------|
-| `beko_ir.py` | pyscript — генерация IR-фреймов и MQTT-триггеры |
-| `packages/beko.yaml` | HA entities: кнопки, переключатели, input_number |
-| `configuration.yaml` | Пример configuration.yaml с подключением пакета |
-| `lovelace-beko.yaml` | Lovelace dashboard для двух кондеев |
+## Installation
 
-## Установка
+### 1. Install pyscript
 
-### 1. Установи pyscript
+Via HACS: `Home Assistant Community Store → Integrations → pyscript`.
 
-Если не установлен — через HACS: `Home Assistant Community Store → Integrations → pyscript`.
+Or manually: clone `custom-components/pyscript` into `/config/custom_components/pyscript`.
 
-Или вручную: склонируй `custom-components/pyscript` в `/config/custom_components/pyscript`.
-
-### 2. Задеплой скрипт
+### 2. Deploy the script
 
 ```bash
-scp ir/beko_ir.py <ha-host>:/path/to/config/pyscript/beko_ir.py
+scp beko_ir.py <ha-host>:/path/to/config/pyscript/beko_ir.py
 ```
 
-Например:
+Example:
 ```bash
-scp ir/beko_ir.py 192.168.1.100:~/smarthome/homeassistant/config/pyscript/beko_ir.py
+scp beko_ir.py 192.168.1.100:~/smarthome/homeassistant/config/pyscript/beko_ir.py
 ```
 
-### 3. Создай папку packages и скопируй пакет
+### 3. Create the packages directory and copy the package
 
-На сервере HA:
+On the HA server:
 ```bash
 mkdir -p /path/to/config/packages
 cp beko.yaml /path/to/config/packages/beko.yaml
 ```
 
-### 4. Обнови configuration.yaml
+### 4. Update configuration.yaml
 
-Добавь в `configuration.yaml`:
+Add to `configuration.yaml`:
 
 ```yaml
 pyscript:
@@ -76,11 +75,11 @@ homeassistant:
     beko: !include packages/beko.yaml
 ```
 
-Если `homeassistant:` уже есть — добавь только `packages:` внутрь.
+If `homeassistant:` already exists, add only the `packages:` block inside it.
 
-### 5. Настрой устройства в beko_ir.py
+### 5. Configure devices in beko_ir.py
 
-В начале `beko_ir.py` найди словарь `DEVICES` и укажи правильные имена IR-бластеров из Zigbee2MQTT:
+Find the `DEVICES` dict at the top of `beko_ir.py` and set the correct IR blaster names from Zigbee2MQTT:
 
 ```python
 DEVICES = {
@@ -95,68 +94,62 @@ DEVICES = {
 }
 ```
 
-Имя IR-бластера (`Black Box IR`, `Plugged IR`) должно совпадать с `friendly_name` устройства в Zigbee2MQTT.
+The IR blaster name (`Black Box IR`, `Plugged IR`) must match the `friendly_name` in Zigbee2MQTT.
 
-### 6. Перезапусти Home Assistant
+### 6. Restart Home Assistant
 
 ```bash
 docker restart homeassistant
 ```
 
-### 7. Добавь Lovelace dashboard
+### 7. Add the Lovelace dashboard
 
-В HA: `Settings → Dashboards → Add Dashboard`.
+In HA: `Settings → Dashboards → Add Dashboard`.
 
-Открой новый дашборд → три точки → `Edit Dashboard` → `Raw configuration editor`.
+Open the new dashboard → three dots → `Edit Dashboard` → `Raw configuration editor`.
 
-Вставь содержимое `lovelace-beko.yaml`.
+Paste the contents of `lovelace-beko.yaml`.
 
-## MQTT топики
+## MQTT Topics
 
-Формат: `beko/<device>/set/<command>`
+Format: `beko/<device>/set/<command>`
 
-| Топик | Payload | Описание |
-|-------|---------|----------|
-| `beko/kabinet/set/mode` | `off` / `cool` / `heat` | Режим |
-| `beko/kabinet/set/temp_up` | `1` | Температура +1°C |
-| `beko/kabinet/set/temp_down` | `1` | Температура −1°C |
-| `beko/kabinet/set/fan_mode` | `1`–`5` | Скорость вентилятора |
-| `beko/kabinet/set/swing` | `pos1`–`pos6`, `auto` | Позиция жалюзи |
-| `beko/kabinet/set/display` | `toggle` | Подсветка дисплея |
-| `beko/kabinet/set/turbo` | `on` / `off` | Турбо режим |
+| Topic | Payload | Description |
+|-------|---------|-------------|
+| `beko/<dev>/set/mode` | `off` / `cool` / `heat` / `dehum` / `fan_only` / `auto` | Mode |
+| `beko/<dev>/set/temperature` | `16`–`30` | Set temperature |
+| `beko/<dev>/set/temp_up` | `1` | Temperature +1°C |
+| `beko/<dev>/set/temp_down` | `1` | Temperature −1°C |
+| `beko/<dev>/set/fan_mode` | `1`–`5` | Fan speed |
+| `beko/<dev>/set/swing` | `pos1`–`pos6`, `auto`, `stop` | Vane position |
+| `beko/<dev>/set/display` | `toggle` | Backlight toggle |
+| `beko/<dev>/set/turbo` | `on` / `off` | Turbo mode |
 
-Для `salon` — аналогично с префиксом `beko/salon/set/`.
+## Adding a new AC unit
 
-## Добавление нового кондея
+1. Add the device to `DEVICES` in `beko_ir.py`
+2. Add entities to `beko.yaml` following the `kabinet` / `salon` pattern
+3. Add a card to `lovelace-beko.yaml`
+4. Deploy `beko_ir.py`, copy the updated `beko.yaml`, restart HA
 
-1. Добавь устройство в `DEVICES` в `beko_ir.py`
-2. Добавь entities в `packages/beko.yaml` по аналогии с `kabinet` / `salon`
-3. Добавь карточку в `lovelace-beko.yaml`
-4. Задеплой `beko_ir.py`, скопируй обновлённый `packages/beko.yaml`, перезапусти HA
+## Supported hardware
 
-## Поддерживаемое железо
-
-Проверено на
-- IR-бластеры
+Tested with:
+- IR blasters
   - Moes UFO-R11 (Zigbee, model TS1201)
-  - Model iH-F8260 Universal smart IR remote control (Tuya)
+  - Model iH-F8260 Universal Smart IR Remote Control (Tuya Wi-Fi)
+- AC units
+  - [Beko 31225](https://www.beko.com.tr/split-klima/31225-ekolojik-klima)
+  - [Beko 30925](https://www.beko.com.tr/split-klima/30925-ekolojik-klima)
 
-- Кондиционеры
-  - https://www.beko.com.tr/split-klima/31225-ekolojik-klima
-  - https://www.beko.com.tr/split-klima/30925-ekolojik-klima
+## Debugging
 
-## Описание протокола
-
-
-
-## Отладка
-
-Проверить что pyscript загрузился:
+Check that pyscript loaded:
 ```bash
 docker logs homeassistant 2>&1 | grep beko
 ```
 
-Мониторинг MQTT:
+Monitor MQTT traffic:
 ```bash
 mosquitto_sub -h <ha-host> -p 1883 -t 'beko/#' -v
 ```
