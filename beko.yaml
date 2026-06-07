@@ -1,0 +1,278 @@
+input_number:
+  beko_kabinet_temp:
+    name: "Kabinet AC Temperature"
+    min: 16
+    max: 30
+    step: 1
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+    initial: 22
+  beko_salon_temp:
+    name: "Salon AC Temperature"
+    min: 16
+    max: 30
+    step: 1
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+    initial: 22
+
+mqtt:
+  button:
+    # ── Kabinet ────────────────────────────────────────────────────────────────
+    - name: "Kabinet AC Off"
+      unique_id: beko_kabinet_mode_off
+      command_topic: "beko/kabinet/set/mode"
+      payload_press: "off"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Cool"
+      unique_id: beko_kabinet_mode_cool
+      command_topic: "beko/kabinet/set/mode"
+      payload_press: "cool"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Heat"
+      unique_id: beko_kabinet_mode_heat
+      command_topic: "beko/kabinet/set/mode"
+      payload_press: "heat"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Fan Only"
+      unique_id: beko_kabinet_mode_fan_only
+      command_topic: "beko/kabinet/set/mode"
+      payload_press: "fan_only"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Auto"
+      unique_id: beko_kabinet_mode_auto
+      command_topic: "beko/kabinet/set/mode"
+      payload_press: "auto"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Temp Up"
+      unique_id: beko_kabinet_temp_up
+      command_topic: "beko/kabinet/set/temp_up"
+      payload_press: "1"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Temp Down"
+      unique_id: beko_kabinet_temp_down
+      command_topic: "beko/kabinet/set/temp_down"
+      payload_press: "1"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Fan 1"
+      unique_id: beko_kabinet_fan_1
+      command_topic: "beko/kabinet/set/fan_mode"
+      payload_press: "1"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Fan 2"
+      unique_id: beko_kabinet_fan_2
+      command_topic: "beko/kabinet/set/fan_mode"
+      payload_press: "2"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Fan 3"
+      unique_id: beko_kabinet_fan_3
+      command_topic: "beko/kabinet/set/fan_mode"
+      payload_press: "3"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Fan 4"
+      unique_id: beko_kabinet_fan_4
+      command_topic: "beko/kabinet/set/fan_mode"
+      payload_press: "4"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Fan 5"
+      unique_id: beko_kabinet_fan_5
+      command_topic: "beko/kabinet/set/fan_mode"
+      payload_press: "5"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Swing pos1"
+      unique_id: beko_kabinet_swing_pos1
+      command_topic: "beko/kabinet/set/swing"
+      payload_press: "pos1"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Swing pos2"
+      unique_id: beko_kabinet_swing_pos2
+      command_topic: "beko/kabinet/set/swing"
+      payload_press: "pos2"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Swing pos3"
+      unique_id: beko_kabinet_swing_pos3
+      command_topic: "beko/kabinet/set/swing"
+      payload_press: "pos3"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Swing pos4"
+      unique_id: beko_kabinet_swing_pos4
+      command_topic: "beko/kabinet/set/swing"
+      payload_press: "pos4"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Swing pos5"
+      unique_id: beko_kabinet_swing_pos5
+      command_topic: "beko/kabinet/set/swing"
+      payload_press: "pos5"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Swing pos6"
+      unique_id: beko_kabinet_swing_pos6
+      command_topic: "beko/kabinet/set/swing"
+      payload_press: "pos6"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Swing Auto"
+      unique_id: beko_kabinet_swing_auto
+      command_topic: "beko/kabinet/set/swing"
+      payload_press: "auto"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Display"
+      unique_id: beko_kabinet_display
+      command_topic: "beko/kabinet/set/display"
+      payload_press: "toggle"
+      availability_topic: "beko/available"
+
+    # ── Salon ──────────────────────────────────────────────────────────────────
+    - name: "Salon AC Off"
+      unique_id: beko_salon_mode_off
+      command_topic: "beko/salon/set/mode"
+      payload_press: "off"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Cool"
+      unique_id: beko_salon_mode_cool
+      command_topic: "beko/salon/set/mode"
+      payload_press: "cool"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Heat"
+      unique_id: beko_salon_mode_heat
+      command_topic: "beko/salon/set/mode"
+      payload_press: "heat"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Fan Only"
+      unique_id: beko_salon_mode_fan_only
+      command_topic: "beko/salon/set/mode"
+      payload_press: "fan_only"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Auto"
+      unique_id: beko_salon_mode_auto
+      command_topic: "beko/salon/set/mode"
+      payload_press: "auto"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Temp Up"
+      unique_id: beko_salon_temp_up
+      command_topic: "beko/salon/set/temp_up"
+      payload_press: "1"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Temp Down"
+      unique_id: beko_salon_temp_down
+      command_topic: "beko/salon/set/temp_down"
+      payload_press: "1"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Fan 1"
+      unique_id: beko_salon_fan_1
+      command_topic: "beko/salon/set/fan_mode"
+      payload_press: "1"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Fan 2"
+      unique_id: beko_salon_fan_2
+      command_topic: "beko/salon/set/fan_mode"
+      payload_press: "2"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Fan 3"
+      unique_id: beko_salon_fan_3
+      command_topic: "beko/salon/set/fan_mode"
+      payload_press: "3"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Fan 4"
+      unique_id: beko_salon_fan_4
+      command_topic: "beko/salon/set/fan_mode"
+      payload_press: "4"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Fan 5"
+      unique_id: beko_salon_fan_5
+      command_topic: "beko/salon/set/fan_mode"
+      payload_press: "5"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Swing pos1"
+      unique_id: beko_salon_swing_pos1
+      command_topic: "beko/salon/set/swing"
+      payload_press: "pos1"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Swing pos2"
+      unique_id: beko_salon_swing_pos2
+      command_topic: "beko/salon/set/swing"
+      payload_press: "pos2"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Swing pos3"
+      unique_id: beko_salon_swing_pos3
+      command_topic: "beko/salon/set/swing"
+      payload_press: "pos3"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Swing pos4"
+      unique_id: beko_salon_swing_pos4
+      command_topic: "beko/salon/set/swing"
+      payload_press: "pos4"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Swing pos5"
+      unique_id: beko_salon_swing_pos5
+      command_topic: "beko/salon/set/swing"
+      payload_press: "pos5"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Swing pos6"
+      unique_id: beko_salon_swing_pos6
+      command_topic: "beko/salon/set/swing"
+      payload_press: "pos6"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Swing Auto"
+      unique_id: beko_salon_swing_auto
+      command_topic: "beko/salon/set/swing"
+      payload_press: "auto"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Display"
+      unique_id: beko_salon_display
+      command_topic: "beko/salon/set/display"
+      payload_press: "toggle"
+      availability_topic: "beko/available"
+
+  switch:
+    - name: "Kabinet AC Turbo"
+      unique_id: beko_kabinet_turbo
+      optimistic: true
+      command_topic: "beko/kabinet/set/turbo"
+      payload_on: "on"
+      payload_off: "off"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Turbo"
+      unique_id: beko_salon_turbo
+      optimistic: true
+      command_topic: "beko/salon/set/turbo"
+      payload_on: "on"
+      payload_off: "off"
+      availability_topic: "beko/available"

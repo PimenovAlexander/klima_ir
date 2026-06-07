@@ -11,6 +11,24 @@ ONE_SPACE    = 1559
 # ── кодировка скорости вентилятора (bits[20:24]) ───────────────────────────
 FAN_VALS = {1: 0, 2: 9, 3: 2, 4: 10, 5: 4}
 
+# ── устройства: name → {ir_topic, input_number} ────────────────────────────
+DEVICES = {
+    "kabinet": {
+        "ir_topic":     "zigbee2mqtt/Black Box IR/set",
+        "input_number": "input_number.beko_kabinet_temp",
+    },
+    "salon": {
+        "ir_topic":     "zigbee2mqtt/Plugged IR/set",
+        "input_number": "input_number.beko_salon_temp",
+    },
+}
+
+# ── состояние каждого устройства ────────────────────────────────────────────
+states = {
+    name: {"mode": "off", "prev_mode": "off", "temp": 22, "fan": 1, "swing": "pos1", "turbo": False}
+    for name in DEVICES
+}
+
 
 def _fastlz1_compress(data: bytes) -> bytes:
     """FastLZ Level 1 greedy LZ77 compression (8 KB window, max match 264).
@@ -27,12 +45,12 @@ def _fastlz1_compress(data: bytes) -> bytes:
     def _emit_literals(start: int, end: int) -> None:
         while start < end:
             run = min(32, end - start)
-            out.append(run - 1)          # 000LLLLL header
+            out.append(run - 1)
             out.extend(data[start:start + run])
             start += run
 
     i = 0
-    pending = 0                          # start of unemitted literal run
+    pending = 0
 
     while i < n:
         best_len = 0
@@ -43,7 +61,7 @@ def _fastlz1_compress(data: bytes) -> bytes:
             for j in range(window, i):
                 ml = 0
                 cap = min(n - i, 264)
-                span = i - j             # distance; match wraps if span < cap
+                span = i - j
                 while ml < cap and data[j + ml % span] == data[i + ml]:
                     ml += 1
                 if ml >= 3 and ml > best_len:
@@ -53,12 +71,12 @@ def _fastlz1_compress(data: bytes) -> bytes:
         if best_len >= 3:
             _emit_literals(pending, i)
             pending = i + best_len
-            d = best_dist - 1           # stored as dist-1
-            ln = best_len - 2           # stored as len-2
-            if ln <= 6:                 # 2-byte form: LLLDDDDD DDDDDDDD
+            d = best_dist - 1
+            ln = best_len - 2
+            if ln <= 6:
                 out.append((ln << 5) | (d >> 8))
                 out.append(d & 0xFF)
-            else:                       # 3-byte form: 111DDDDD LLLLLLLL DDDDDDDD
+            else:
                 out.append(0xE0 | (d >> 8))
                 out.append((ln - 7) & 0xFF)
                 out.append(d & 0xFF)
@@ -71,75 +89,27 @@ def _fastlz1_compress(data: bytes) -> bytes:
 
 
 def _frame_to_base64(frame_28bit):
-    """28-bit integer → Tuya base64 (FastLZ with back-references)."""
     bits = f"{frame_28bit:028b}"
     timings = [LEADER_MARK, LEADER_SPACE]
     for b in bits:
         timings.append(BIT_MARK)
         timings.append(ONE_SPACE if b == "1" else ZERO_SPACE)
-    timings.append(BIT_MARK)  # trailing mark
+    timings.append(BIT_MARK)
     raw = b""
     for t in timings:
         raw += struct.pack("<H", t)
     return base64.b64encode(_fastlz1_compress(raw)).decode()
 
 
-def beko_frame(mode, temp, fan, power="on", wake=False):
-    """
-    Собирает 28-битный фрейм протокола Beko 31225/30925.
-
-    bits[0:8]   = 0x88  — фиксированный заголовок
-    bits[8:10]  = 00=ON / 11=OFF
-    bits[10:13] = 000=включение с параметрами / 001=команда (кондей уже включён)
-    bits[13]    = 0=COOL / 1=HEAT
-    bits[14:16] = 00
-    bits[16:20] = temp - 15
-    bits[20:24] = FAN_VALS[fan]
-    bits[24:28] = (FAN_VALS[fan] + temp_lo) % 16  — контрольная сумма
-    """
-    pwr    = 0b00 if power == "on" else 0b11
+def beko_frame(mode, temp, fan, wake=False):
     mode_b = 0 if mode == "cool" else 1
     swg    = 0b000 if wake else 0b001
     n4     = temp - 15
     fv     = FAN_VALS[fan]
     tlo    = (temp - 7) % 16 if mode == "cool" else (temp - 3) % 16
     chk    = (fv + tlo - (8 if wake else 0)) % 16
-    return (0b10001000 << 20 | pwr << 18 | swg << 15 | mode_b << 14 |
+    return (0b10001000 << 20 | 0b00 << 18 | swg << 15 | mode_b << 14 |
             n4 << 8 | fv << 4 | chk)
-
-
-def beko_to_base64(mode, temp, fan, power="on"):
-    return _frame_to_base64(beko_frame(mode, temp, fan, power))
-
-
-# ── ON: простое включение, bits[10:13]=000 — кондей должен получить его первым
-ON_FRAME    = 0x880069F
-ON_CODE     = _frame_to_base64(ON_FRAME)
-
-# ── OFF: фиксированный фрейм 0x88C0051, верифицирован на 9 захватах ────────
-OFF_FRAME     = 0x88C0051
-OFF_CODE      = _frame_to_base64(OFF_FRAME)
-
-# ── DISPLAY: toggle индикации, верифицирован на 6 захватах ──────────────────
-DISPLAY_FRAME = 0x88C00A6
-DISPLAY_CODE  = _frame_to_base64(DISPLAY_FRAME)
-
-# ── TURBO: ON = спецфрейм 0x8810089, OFF = возврат к текущему state ─────────
-TURBO_FRAME   = 0x8810089
-TURBO_CODE    = _frame_to_base64(TURBO_FRAME)
-
-# ── swing: bits[10:13]=010, bits[14:16]=11
-# frame = 0x88 header | 010 | mode=0 | 11 | hi<<8 | lo<<4 | chk
-# chk = lo + 4 + hi  (verified on all 7 positions)
-SWING_POS = {
-    "auto": (1, 4),
-    "pos1": (0, 2),
-    "pos2": (0, 3),   # works 
-    "pos3": (0, 4),   # works
-    "pos4": (0, 5),   # works
-    "pos5": (0, 6),   # works
-    "pos6": (0, 7)    # works
-}
 
 
 def swing_frame(pos):
@@ -148,106 +118,144 @@ def swing_frame(pos):
     return (0b10001000 << 20 | 0b010 << 15 | 0b11 << 12 |
             hi << 8 | lo << 4 | chk)
 
-# ── текущее состояние ───────────────────────────────────────────────────────
-state = {
-    "mode":      "off",
-    "prev_mode": "off",
-    "temp":      22,
-    "fan":       1,
-    "swing":     "pos1",
-    "turbo":     False,
+
+# ── предвычисленные фиксированные коды ─────────────────────────────────────
+OFF_CODE     = _frame_to_base64(0x88C0051)
+DISPLAY_CODE = _frame_to_base64(0x88C00A6)
+TURBO_CODE   = _frame_to_base64(0x8810089)
+
+SWING_POS = {
+    "auto": (1, 4),
+    "pos1": (0, 2),
+    "pos2": (0, 3),
+    "pos3": (0, 4),
+    "pos4": (0, 5),
+    "pos5": (0, 6),
+    "pos6": (0, 7),
 }
 
+
+def _publish(device_name, ir):
+    topic = DEVICES[device_name]["ir_topic"]
+    mqtt.publish(topic=topic, payload=f'{{"ir_code_to_send":"{ir}"}}')
+
+
+def _send_ir(device_name):
+    s    = states[device_name]
+    mode = s["mode"]
+    temp = s["temp"]
+    fan  = s["fan"]
+    prev = s["prev_mode"]
+
+    if mode == "off":
+        _publish(device_name, OFF_CODE)
+        log.info(f"Beko [{device_name}]: OFF")
+    elif mode in ("cool", "heat"):
+        wake = (prev == "off")
+        _publish(device_name, _frame_to_base64(beko_frame(mode, temp, fan, wake=wake)))
+        log.info(f"Beko [{device_name}]: mode={mode} temp={temp} fan={fan} wake={wake}")
+    else:
+        return
+
+    s["prev_mode"] = mode
+
+
+def _set_temp(device_name, temp):
+    states[device_name]["temp"] = temp
+    entity_id = DEVICES[device_name]["input_number"]
+    input_number.set_value(entity_id=entity_id, value=temp)
+
+
+def _device_from_topic(topic):
+    # topic format: beko/<device>/set/<cmd>
+    parts = topic.split("/")
+    if len(parts) >= 2 and parts[1] in DEVICES:
+        return parts[1]
+    return None
+
+
+# ── публикуем availability для всех устройств ──────────────────────────────
+mqtt.publish(topic="beko/available", payload="online", retain=True)
 log.info("beko_ir.py loaded OK")
 
 
-def _publish(ir):
-    mqtt.publish(
-        topic="zigbee2mqtt/Black Box IR/set",
-        payload=f'{{"ir_code_to_send":"{ir}"}}'
-    )
-
-
-def _sync_state():
-    """Публикуем реальное состояние → HA обновляет UI.
-    Потом сбрасываем в None → frontend перестаёт фильтровать повторные клики."""
-    s = state
-    mqtt.publish(topic="beko/state/mode",        payload=s["mode"])
-    mqtt.publish(topic="beko/state/temperature",  payload=str(s["temp"]))
-    mqtt.publish(topic="beko/state/fan_mode",     payload=str(s["fan"]))
-    mqtt.publish(topic="beko/state/swing",        payload=s["swing"])
-    task.sleep(0.5)
-    mqtt.publish(topic="beko/state/mode",         payload="")
-    mqtt.publish(topic="beko/state/temperature",  payload="")
-    mqtt.publish(topic="beko/state/fan_mode",     payload="")
-    mqtt.publish(topic="beko/state/swing",        payload="")
-
-
-def send_ir():
-    mode = state["mode"]
-    temp = state["temp"]
-    fan  = state["fan"]
-    prev = state["prev_mode"]
-
-    if mode == "off":
-        _publish(OFF_CODE)
-        log.info("Beko IR: OFF")
-    elif mode in ("cool", "heat"):
-        wake = (prev == "off")
-        _publish(_frame_to_base64(beko_frame(mode, temp, fan, wake=wake)))
-        log.info(f"Beko IR: mode={mode} temp={temp} fan={fan} wake={wake}")
-    else:
-        return
-
-    state["prev_mode"] = mode
-    _sync_state()
-
-
-@mqtt_trigger("beko/set/mode")
+@mqtt_trigger("beko/+/set/mode")
 def on_mode(topic, payload, **kwargs):
-    state["mode"] = payload
-    send_ir()
-
-
-@mqtt_trigger("beko/set/temperature")
-def on_temperature(topic, payload, **kwargs):
-    state["temp"] = int(float(payload))
-    send_ir()
-
-
-@mqtt_trigger("beko/set/fan_mode")
-def on_fan(topic, payload, **kwargs):
-    state["fan"] = int(payload)
-    send_ir()
-
-
-@mqtt_trigger("beko/set/swing")
-def on_swing(topic, payload, **kwargs):
-    if payload not in SWING_POS:
-        log.error(f"Beko unknown swing: {payload}")
+    dev = _device_from_topic(topic)
+    if not dev:
         return
-    state["swing"] = payload
-    ir = _frame_to_base64(swing_frame(payload))
-    mqtt.publish(
-        topic="zigbee2mqtt/Black Box IR/set",
-        payload=f'{{"ir_code_to_send":"{ir}"}}'
-    )
-    log.info(f"Beko swing: {payload}")
+    states[dev]["mode"] = payload
+    _send_ir(dev)
 
 
-@mqtt_trigger("beko/set/display")
+@mqtt_trigger("beko/+/set/temperature")
+def on_temperature(topic, payload, **kwargs):
+    dev = _device_from_topic(topic)
+    if not dev:
+        return
+    _set_temp(dev, int(float(payload)))
+    _send_ir(dev)
+
+
+@mqtt_trigger("beko/+/set/temp_up")
+def on_temp_up(topic, payload, **kwargs):
+    dev = _device_from_topic(topic)
+    if not dev:
+        return
+    _set_temp(dev, min(30, states[dev]["temp"] + 1))
+    _send_ir(dev)
+
+
+@mqtt_trigger("beko/+/set/temp_down")
+def on_temp_down(topic, payload, **kwargs):
+    dev = _device_from_topic(topic)
+    if not dev:
+        return
+    _set_temp(dev, max(16, states[dev]["temp"] - 1))
+    _send_ir(dev)
+
+
+@mqtt_trigger("beko/+/set/fan_mode")
+def on_fan(topic, payload, **kwargs):
+    dev = _device_from_topic(topic)
+    if not dev:
+        return
+    states[dev]["fan"] = int(payload)
+    _send_ir(dev)
+
+
+@mqtt_trigger("beko/+/set/swing")
+def on_swing(topic, payload, **kwargs):
+    dev = _device_from_topic(topic)
+    if not dev:
+        return
+    if payload not in SWING_POS:
+        log.error(f"Beko [{dev}] unknown swing: {payload}")
+        return
+    states[dev]["swing"] = payload
+    _publish(dev, _frame_to_base64(swing_frame(payload)))
+    log.info(f"Beko [{dev}]: swing={payload}")
+
+
+@mqtt_trigger("beko/+/set/display")
 def on_display(topic, payload, **kwargs):
-    _publish(DISPLAY_CODE)
-    log.info("Beko display toggled")
+    dev = _device_from_topic(topic)
+    if not dev:
+        return
+    _publish(dev, DISPLAY_CODE)
+    log.info(f"Beko [{dev}]: display toggled")
 
 
-@mqtt_trigger("beko/set/turbo")
+@mqtt_trigger("beko/+/set/turbo")
 def on_turbo(topic, payload, **kwargs):
+    dev = _device_from_topic(topic)
+    if not dev:
+        return
     if payload == "on":
-        state["turbo"] = True
-        _publish(TURBO_CODE)
-        log.info("Beko turbo ON")
+        states[dev]["turbo"] = True
+        _publish(dev, TURBO_CODE)
+        log.info(f"Beko [{dev}]: turbo ON")
     else:
-        state["turbo"] = False
-        send_ir()
-        log.info("Beko turbo OFF")
+        states[dev]["turbo"] = False
+        _send_ir(dev)
+        log.info(f"Beko [{dev}]: turbo OFF")
