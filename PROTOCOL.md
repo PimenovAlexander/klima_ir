@@ -41,20 +41,32 @@ base64( FastLZ_compress( uint16_le_microseconds[] ) )
 ## 28-bit Frame Structure
 
 ```
-Bit pos:  0    4    8  10   13 14  16   20   24   27
-          1000 1000 PP SWG  M  00  NNNN FFFF CCCC
+Bit pos:  0    4    8  10   13 15  16   20   24   27
+          1000 1000 PP SWG  M  MM  NNNN FFFF CCCC
 ```
 
-| Bits  | Field    | Values |
-|-------|----------|--------|
-| 0–7   | Header   | `10001000` = 0x88, fixed |
-| 8–9   | Power    | `00` = ON, `11` = OFF |
-| 10–12 | Swing    | `001` = базовое направление (вперёд/вверх) |
-| 13    | Mode     | `0` = COOL, `1` = HEAT |
-| 14–15 | Fixed    | `00` |
-| 16–19 | Temp hi  | `temp − 15` |
-| 20–23 | Fan      | encoded value, see table |
-| 24–27 | Checksum | `(fan_val + temp_lo) % 16` |
+| Bits  | Field      | Values |
+|-------|------------|--------|
+| 0–7   | Header     | `10001000` = 0x88, fixed |
+| 8–9   | Power      | `00` = ON, `11` = OFF |
+| 10–12 | Frame type | `001` = command, `000` = wake/ON, `010` = swing |
+| 13    | Heat flag  | `0` = не HEAT, `1` = HEAT |
+| 14–15 | Mode ext   | sub-mode bits, see table |
+| 16–19 | Temp hi    | `frame_temp − 15` |
+| 20–23 | Fan        | encoded value, see table |
+| 24–27 | Checksum   | `(fan_val + temp_lo + mode_ext) % 16` |
+
+### Mode encoding (bits 13 + 14:16)
+
+| Mode     | bits[13] | bits[14:16] | frame_temp      |
+|----------|----------|-------------|-----------------|
+| COOL     | `0`      | `00`        | реальная        |
+| HEAT     | `1`      | `00`        | реальная        |
+| DEHUM    | `0`      | `01`        | `16` (fixed)    |
+| FAN ONLY | `0`      | `10`        | `16` (fixed)    |
+| AUTO     | `0`      | `11`        | реальная        |
+
+Для DEHUM и FAN ONLY кондей игнорирует температуру — в фрейме всегда `16`.
 
 ### Fan encoding (bits 20–23)
 
@@ -66,12 +78,18 @@ Bit pos:  0    4    8  10   13 14  16   20   24   27
 | 4     | 10      | `1010` |
 | 5     | 4       | `0100` |
 
-### Temperature low nibble (checksum ingredient)
+### Checksum (bits 24–27)
 
-| Mode | Formula           |
-|------|-------------------|
-| COOL | `(temp − 7) % 16` |
-| HEAT | `(temp − 3) % 16` |
+`chk = (fan_val + temp_lo + mode_ext) % 16`
+
+где `mode_ext` = bits[14:16] как целое число (0–3), и:
+
+| Heat flag | temp_lo formula     |
+|-----------|---------------------|
+| `0`       | `(frame_temp − 7) % 16` |
+| `1`       | `(frame_temp − 3) % 16` |
+
+Для wake-фрейма (bits[10:12]=`000`): `chk = (fan_val + temp_lo + mode_ext − 8) % 16`
 
 ### OFF frame
 
@@ -126,25 +144,36 @@ Swing codes are generated via formula, not lookup table. SWING_POS values are us
 ```python
 FAN_VALS = {1: 0, 2: 9, 3: 2, 4: 10, 5: 4}
 
-def beko_frame(mode, temp, fan, power='on', wake=False):
-    """
-    mode:  'cool' | 'heat'
-    temp:  18–30 (°C) для cool, 16–30 для heat
-    fan:   1–5
-    wake:  True = включение кондея (bits[10:13]=000)
-           False = команда работающему (bits[10:13]=001)
-    """
-    pwr    = 0b00 if power == 'on' else 0b11
-    mode_b = 0 if mode == 'cool' else 1
-    swg    = 0b000 if wake else 0b001
-    n4     = temp - 15
-    fv     = FAN_VALS[fan]
-    tlo    = (temp - 7) % 16 if mode == 'cool' else (temp - 3) % 16
-    chk    = (fv + tlo - (8 if wake else 0)) % 16
-    return (0b10001000 << 20 | pwr << 18 | swg << 15 | mode_b << 14 |
-            n4 << 8 | fv << 4 | chk)
+# (bits[13], bits[14:16])
+MODE_BITS = {
+    "cool":     (0, 0b00),
+    "heat":     (1, 0b00),
+    "dehum":    (0, 0b01),
+    "fan_only": (0, 0b10),
+    "auto":     (0, 0b11),
+}
+# dehum и fan_only игнорируют температуру
+MODE_FIXED_TEMP = {"dehum": 16, "fan_only": 16}
 
-OFF_FRAME = 0x88C0051  # фиксированный, bits[10:13]=000
+def beko_frame(mode, temp, fan, wake=False):
+    """
+    mode:  'cool' | 'heat' | 'dehum' | 'fan_only' | 'auto'
+    temp:  16–30 (°C), игнорируется для dehum и fan_only
+    fan:   1–5
+    wake:  True = включение кондея (bits[10:12]=000)
+           False = команда работающему (bits[10:12]=001)
+    """
+    mode_b, mb = MODE_BITS[mode]
+    frame_temp = MODE_FIXED_TEMP.get(mode, temp)
+    swg  = 0b000 if wake else 0b001
+    n4   = frame_temp - 15
+    fv   = FAN_VALS[fan]
+    tlo  = (frame_temp - 7) % 16 if mode_b == 0 else (frame_temp - 3) % 16
+    chk  = (fv + tlo + mb - (8 if wake else 0)) % 16
+    return (0b10001000 << 20 | 0b00 << 18 | swg << 15 | mode_b << 14 |
+            mb << 12 | n4 << 8 | fv << 4 | chk)
+
+OFF_FRAME = 0x88C0051  # фиксированный, bits[10:12]=000
 ```
 
 ---

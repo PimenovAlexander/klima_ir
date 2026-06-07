@@ -47,6 +47,15 @@ views:
                   target:
                     entity_id: button.kabinet_ac_fan_only
               - type: button
+                entity: button.kabinet_ac_dehum
+                name: "DRY"
+                icon: mdi:water-percent
+                tap_action:
+                  action: call-service
+                  service: button.press
+                  target:
+                    entity_id: button.kabinet_ac_dehum
+              - type: button
                 entity: button.kabinet_ac_auto
                 name: "AUTO"
                 icon: mdi:autorenew
@@ -56,33 +65,10 @@ views:
                   target:
                     entity_id: button.kabinet_ac_auto
 
-          - type: horizontal-stack
-            cards:
-              - type: button
-                entity: button.kabinet_ac_temp_down
-                name: "−"
-                show_name: true
-                show_icon: false
-                tap_action:
-                  action: call-service
-                  service: button.press
-                  target:
-                    entity_id: button.kabinet_ac_temp_down
-              - type: tile
-                entity: input_number.beko_kabinet_temp
+          - type: entities
+            entities:
+              - entity: input_number.beko_kabinet_temp
                 name: "Температура"
-                tap_action:
-                  action: none
-              - type: button
-                entity: button.kabinet_ac_temp_up
-                name: "+"
-                show_name: true
-                show_icon: false
-                tap_action:
-                  action: call-service
-                  service: button.press
-                  target:
-                    entity_id: button.kabinet_ac_temp_up
 
           - type: horizontal-stack
             cards:
@@ -261,6 +247,15 @@ views:
                   target:
                     entity_id: button.salon_ac_fan_only
               - type: button
+                entity: button.salon_ac_dehum
+                name: "DRY"
+                icon: mdi:water-percent
+                tap_action:
+                  action: call-service
+                  service: button.press
+                  target:
+                    entity_id: button.salon_ac_dehum
+              - type: button
                 entity: button.salon_ac_auto
                 name: "AUTO"
                 icon: mdi:autorenew
@@ -270,33 +265,10 @@ views:
                   target:
                     entity_id: button.salon_ac_auto
 
-          - type: horizontal-stack
-            cards:
-              - type: button
-                entity: button.salon_ac_temp_down
-                name: "−"
-                show_name: true
-                show_icon: false
-                tap_action:
-                  action: call-service
-                  service: button.press
-                  target:
-                    entity_id: button.salon_ac_temp_down
-              - type: tile
-                entity: input_number.beko_salon_temp
+          - type: entities
+            entities:
+              - entity: input_number.beko_salon_temp
                 name: "Температура"
-                tap_action:
-                  action: none
-              - type: button
-                entity: button.salon_ac_temp_up
-                name: "+"
-                show_name: true
-                show_icon: false
-                tap_action:
-                  action: call-service
-                  service: button.press
-                  target:
-                    entity_id: button.salon_ac_temp_up
 
           - type: horizontal-stack
             cards:

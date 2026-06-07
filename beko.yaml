@@ -43,6 +43,12 @@ mqtt:
       payload_press: "fan_only"
       availability_topic: "beko/available"
 
+    - name: "Kabinet AC Dehum"
+      unique_id: beko_kabinet_mode_dehum
+      command_topic: "beko/kabinet/set/mode"
+      payload_press: "dehum"
+      availability_topic: "beko/available"
+
     - name: "Kabinet AC Auto"
       unique_id: beko_kabinet_mode_auto
       command_topic: "beko/kabinet/set/mode"
@@ -164,6 +170,12 @@ mqtt:
       payload_press: "fan_only"
       availability_topic: "beko/available"
 
+    - name: "Salon AC Dehum"
+      unique_id: beko_salon_mode_dehum
+      command_topic: "beko/salon/set/mode"
+      payload_press: "dehum"
+      availability_topic: "beko/available"
+
     - name: "Salon AC Auto"
       unique_id: beko_salon_mode_auto
       command_topic: "beko/salon/set/mode"
@@ -262,6 +274,7 @@ mqtt:
 
   switch:
     - name: "Kabinet AC Turbo"
+
       unique_id: beko_kabinet_turbo
       optimistic: true
       command_topic: "beko/kabinet/set/turbo"
@@ -276,3 +289,24 @@ mqtt:
       payload_on: "on"
       payload_off: "off"
       availability_topic: "beko/available"
+
+automation:
+  - alias: beko_kabinet_temp
+    trigger:
+      - platform: state
+        entity_id: input_number.beko_kabinet_temp
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "beko/kabinet/set/temperature"
+          payload: "{{ states('input_number.beko_kabinet_temp') | int }}"
+
+  - alias: beko_salon_temp
+    trigger:
+      - platform: state
+        entity_id: input_number.beko_salon_temp
+    action:
+      - service: mqtt.publish
+        data:
+          topic: "beko/salon/set/temperature"
+          payload: "{{ states('input_number.beko_salon_temp') | int }}"

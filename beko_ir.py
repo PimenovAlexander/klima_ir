@@ -101,15 +101,27 @@ def _frame_to_base64(frame_28bit):
     return base64.b64encode(_fastlz1_compress(raw)).decode()
 
 
+MODE_BITS = {
+    "cool":     (0, 0b00),  # (bits[13], bits[14:16])
+    "heat":     (1, 0b00),
+    "dehum":    (0, 0b01),
+    "fan_only": (0, 0b10),
+    "auto":     (0, 0b11),
+}
+# для dehum и fan_only кондей игнорирует температуру — шлём 16
+MODE_FIXED_TEMP = {"dehum": 16, "fan_only": 16}
+
+
 def beko_frame(mode, temp, fan, wake=False):
-    mode_b = 0 if mode == "cool" else 1
-    swg    = 0b000 if wake else 0b001
-    n4     = temp - 15
-    fv     = FAN_VALS[fan]
-    tlo    = (temp - 7) % 16 if mode == "cool" else (temp - 3) % 16
-    chk    = (fv + tlo - (8 if wake else 0)) % 16
+    mode_b, mb = MODE_BITS[mode]
+    frame_temp = MODE_FIXED_TEMP.get(mode, temp)
+    swg  = 0b000 if wake else 0b001
+    n4   = frame_temp - 15
+    fv   = FAN_VALS[fan]
+    tlo  = (frame_temp - 7) % 16 if mode_b == 0 else (frame_temp - 3) % 16
+    chk  = (fv + tlo + mb - (8 if wake else 0)) % 16
     return (0b10001000 << 20 | 0b00 << 18 | swg << 15 | mode_b << 14 |
-            n4 << 8 | fv << 4 | chk)
+            mb << 12 | n4 << 8 | fv << 4 | chk)
 
 
 def swing_frame(pos):
@@ -162,8 +174,7 @@ def _send_ir(device_name):
 
 def _set_temp(device_name, temp):
     states[device_name]["temp"] = temp
-    entity_id = DEVICES[device_name]["input_number"]
-    input_number.set_value(entity_id=entity_id, value=temp)
+    input_number.set_value(entity_id=DEVICES[device_name]["input_number"], value=temp)
 
 
 def _device_from_topic(topic):
