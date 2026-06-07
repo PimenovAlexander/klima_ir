@@ -137,13 +137,14 @@ DISPLAY_CODE = _frame_to_base64(0x88C00A6)
 TURBO_CODE   = _frame_to_base64(0x8810089)
 
 SWING_POS = {
+    "pos1": (0, 4),
+    "pos2": (0, 5),
+    "pos3": (0, 6),
+    "pos4": (0, 7),
+    "pos5": (0, 8),
+    "pos6": (0, 9),
     "auto": (1, 4),
-    "pos1": (0, 2),
-    "pos2": (0, 3),
-    "pos3": (0, 4),
-    "pos4": (0, 5),
-    "pos5": (0, 6),
-    "pos6": (0, 7),
+    "stop": (1, 5),
 }
 
 
@@ -162,11 +163,12 @@ def _send_ir(device_name):
     if mode == "off":
         _publish(device_name, OFF_CODE)
         log.info(f"Beko [{device_name}]: OFF")
-    elif mode in ("cool", "heat"):
+    elif mode in MODE_BITS:
         wake = (prev == "off")
         _publish(device_name, _frame_to_base64(beko_frame(mode, temp, fan, wake=wake)))
         log.info(f"Beko [{device_name}]: mode={mode} temp={temp} fan={fan} wake={wake}")
     else:
+        log.error(f"Beko [{device_name}]: unknown mode '{mode}'")
         return
 
     s["prev_mode"] = mode

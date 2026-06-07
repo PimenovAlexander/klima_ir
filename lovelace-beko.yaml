@@ -123,7 +123,7 @@ views:
               - type: button
                 entity: button.kabinet_ac_swing_pos1
                 name: "1"
-                icon: mdi:arrow-up
+                icon: mdi:arrow-down
                 tap_action:
                   action: call-service
                   service: button.press
@@ -132,7 +132,7 @@ views:
               - type: button
                 entity: button.kabinet_ac_swing_pos2
                 name: "2"
-                icon: mdi:arrow-top-right
+                icon: mdi:arrow-bottom-right
                 tap_action:
                   action: call-service
                   service: button.press
@@ -150,7 +150,7 @@ views:
               - type: button
                 entity: button.kabinet_ac_swing_pos4
                 name: "4"
-                icon: mdi:arrow-bottom-right
+                icon: mdi:arrow-top-right
                 tap_action:
                   action: call-service
                   service: button.press
@@ -159,7 +159,7 @@ views:
               - type: button
                 entity: button.kabinet_ac_swing_pos5
                 name: "5"
-                icon: mdi:arrow-down-right
+                icon: mdi:arrow-up-right
                 tap_action:
                   action: call-service
                   service: button.press
@@ -168,7 +168,7 @@ views:
               - type: button
                 entity: button.kabinet_ac_swing_pos6
                 name: "6"
-                icon: mdi:arrow-down
+                icon: mdi:arrow-up
                 tap_action:
                   action: call-service
                   service: button.press
@@ -183,6 +183,15 @@ views:
                   service: button.press
                   target:
                     entity_id: button.kabinet_ac_swing_auto
+              - type: button
+                entity: button.kabinet_ac_swing_stop
+                name: "Stop"
+                icon: mdi:stop
+                tap_action:
+                  action: call-service
+                  service: button.press
+                  target:
+                    entity_id: button.kabinet_ac_swing_stop
 
           - type: horizontal-stack
             cards:
@@ -323,7 +332,7 @@ views:
               - type: button
                 entity: button.salon_ac_swing_pos1
                 name: "1"
-                icon: mdi:arrow-up
+                icon: mdi:arrow-down
                 tap_action:
                   action: call-service
                   service: button.press
@@ -332,7 +341,7 @@ views:
               - type: button
                 entity: button.salon_ac_swing_pos2
                 name: "2"
-                icon: mdi:arrow-top-right
+                icon: mdi:arrow-bottom-right
                 tap_action:
                   action: call-service
                   service: button.press
@@ -350,7 +359,7 @@ views:
               - type: button
                 entity: button.salon_ac_swing_pos4
                 name: "4"
-                icon: mdi:arrow-bottom-right
+                icon: mdi:arrow-top-right
                 tap_action:
                   action: call-service
                   service: button.press
@@ -359,7 +368,7 @@ views:
               - type: button
                 entity: button.salon_ac_swing_pos5
                 name: "5"
-                icon: mdi:arrow-down-right
+                icon: mdi:arrow-up-right
                 tap_action:
                   action: call-service
                   service: button.press
@@ -368,7 +377,7 @@ views:
               - type: button
                 entity: button.salon_ac_swing_pos6
                 name: "6"
-                icon: mdi:arrow-down
+                icon: mdi:arrow-up
                 tap_action:
                   action: call-service
                   service: button.press
@@ -383,6 +392,15 @@ views:
                   service: button.press
                   target:
                     entity_id: button.salon_ac_swing_auto
+              - type: button
+                entity: button.salon_ac_swing_stop
+                name: "Stop"
+                icon: mdi:stop
+                tap_action:
+                  action: call-service
+                  service: button.press
+                  target:
+                    entity_id: button.salon_ac_swing_stop
 
           - type: horizontal-stack
             cards:

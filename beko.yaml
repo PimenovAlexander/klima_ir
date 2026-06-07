@@ -139,6 +139,12 @@ mqtt:
       payload_press: "auto"
       availability_topic: "beko/available"
 
+    - name: "Kabinet AC Swing Stop"
+      unique_id: beko_kabinet_swing_stop
+      command_topic: "beko/kabinet/set/swing"
+      payload_press: "stop"
+      availability_topic: "beko/available"
+
     - name: "Kabinet AC Display"
       unique_id: beko_kabinet_display
       command_topic: "beko/kabinet/set/display"
@@ -264,6 +270,12 @@ mqtt:
       unique_id: beko_salon_swing_auto
       command_topic: "beko/salon/set/swing"
       payload_press: "auto"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Swing Stop"
+      unique_id: beko_salon_swing_stop
+      command_topic: "beko/salon/set/swing"
+      payload_press: "stop"
       availability_topic: "beko/available"
 
     - name: "Salon AC Display"

@@ -1,0 +1,94 @@
+# Beko 31225 IR captures
+# Format: label  base64  hex
+# Labels: mode temp fan [wake]
+
+# ── COOL/HEAT on/off (unlabeled first block, all identical pairs) ────────────
+
+cool 21 f1 wake   Cw0L4yXmAR0G5gEQAuABA0AP4AMB4AMb4A8LQDNAA0AfwAfAC0APCx0G5gEdBuYBHQbmAQ==  0x880069F
+off               CUAL9CXwARQG8AHgAwFADwEnAoADQAFAD0AD4AMT4BcBwC9AB+ADAQMUBvAB             0x88C0051
+
+# RESHOOT: remaining 7 entries in the first block are duplicates — re-capture with correct labels
+
+# ── COOL temperature sweep, fan=1, swing=pos1 ────────────────────────────────
+
+cool 18 f1        CZUL3yXVARwG1QFAAQEnAoADQA/AC+ALB+APH0AXQAPgBzPAEwccBtUBHAbVAQ==         0x880830B
+cool 19 f1        CysL2yXSARwG0gElAuABA+AHD+ADG0AL4Asf4AsTQCtAA0AbCxwG0gElAtIBJQLSAQ==     0x880840C
+cool 20 f1        DYUL0iXZASgG2QEiAtkBwAHAD0AT4AsD4AsfwBPAB+ADN0ATCygG2QHZAdkBKAbZAQ==     0x880850D
+cool 21 f1        C1AL9SXTASIG0wErAuABA+AHD8AbQAFAC+ALH0ATQANAH+AHA0AXCyIG0wEiBtMB0wHTAQ== 0x880860E
+cool 22 f1        CZoL2CXUASAG1AHAAQMtAtQBQA9AB+APA+ALH0ATwAPgBzfAFwcgBtQBIAbUAQ==         0x880870F
+cool 23 f1        CaYLzCXWATUG1gHAAQMjAtYBQA9AB+APA+AHH+AHD+ADN0AB4AMPAyMC1gE=             0x8808800
+cool 24 f1        C2ELwCXXASoG1wEbAuABA+AHD+ADG0AL4Acf4AMP4AMLQCvgBwMDKgbXAQ==             0x8808901
+cool 25 f1        C4EL3yXVAS4G1QEeAuABA+AHD+ADG0AL4AcfwA/AB0Aj4AMDQAELHgLVAS4G1QEeAtUB    0x8808A02
+cool 26 f1        C2UL7yXbASEG2wEcAuABA+AHD0AbQAFAB0AD4AcfwA9AB0ADQCPAA0ABwAsHIQbbASEG2wE= 0x8808B03
+
+# ── HEAT temperature sweep, fan=1, swing=pos1 ────────────────────────────────
+
+heat 16 f1        CX4L3iXrASAG6wFAAQEhAoADQA9AC8AB4AcLQB9AA8ABQB/AA+ADF8ABQBMLIAbrAesB6wEgBusB  0x880C10D
+heat 17 f1        C0oL2SXcASEG3AEqAuABA+AHD+ADG0ALQB9AA0AL4AMDQBPgCwFAFwshBtwBIQbcASoC3AE=      0x880C20E
+heat 18 f1        C6oLwyXuARMG7gEnAoADQAFAD+APAUAnQB9AA+ADAeALF0ATQANAKwsTBu4BEwbuARMG7gE=       0x880C30F
+heat 19 f1        C4EL3yXjASUG4wEIAuABA+AHD+ADG0ALQB9AA0ALwAPgAQ8FCALjAQgCgAFACeAGAwIC4wE=       0x880C400
+heat 20 f1        CYEL7iX0ARwG9AHgAwHgBw/gBwFAH0ADAyUC9AHAAUAPQAHAB+APAQMcBvQB                   0x880C501
+heat 21 f1        CU0L3SXsAQwG7AHgAwFADwMgAuwBQAFAB+ADA0ABQB9AA8AXQAFAD0ADwBNAB+AHAQcMBuwBIALsAQ== 0x880C602
+heat 22 f1        CaELvyXsAR4G7AFAAQEgAoADwA/gDwFAH0AD4AMBQA/AA8BHQAfAAQsgAuwBHgbsAR4G7AE=       0x880C703
+heat 23 f1        CbULwiX2ARkG9gHgAwHgBw/gBwFAH0ADwAHgAwvgDwELGQb2AfYB9gH2AfYB                   0x880C804
+heat 24 f1        CZwL8yX1ARkG9QHgAwHgBw/gBwFAH0ADwAHgDwvgAwELGQb1AfUB9QEZBvUB                   0x880C905
+heat 25 f1        CXwL7iX2AREG9gHgAwHgBw/gBwFAH0ADwAHAC8AH4AsBCxEG9gERBvYB9gH2AQ==               0x880CA06
+heat 26 f1        C4ML8SXvARUG7wEjAoADQAHAD+ALAUAnQB9AA8ABwAtAB0ADQCPgBwELFQbvARUG7wEVBu8B        0x880CB07
+
+# ── HEAT fan sweep, temp=27 ───────────────────────────────────────────────────
+
+heat 27 f1        C/QKCCbmAScG5gEhAuABA+AHD0Ab4AMBQB9AA0ABQBtAC0ADQAFAD+AHAUAbCyEC5gEhAuYBIQLmAQ== 0x880CC08
+heat 27 f2        CYYLBSbbARgG2wFAAQEmAoADQA/AC+ALB0AfQAPAG0ALQANAD0ABwAtAD8ALC9sB2wEmAtsBGAbbAQ==  0x880CC91
+heat 27 f3        CysL2yXTASEG0wEkAuABA+AHD+ADG0ALQB9AA0ALQANAC0ADQAuAAwUkAtMB0wHAE+AEBwIC0wE=     0x880CC2A
+heat 27 f4        CTkL3iXZASUG2QFAAQElAqADIA8AJcAL4AYHQAEAJUAfQAPAG0ALQAPgAw9AC+ACEwvZAdkBJQbZASUC2QE= 0x880CCA2
+heat 27 f5        C3cL8SXjARwG4wEdAuABA+AHD8AbQAFAC0AfQANAC0ABQAtAA0APQANAAUAPwAFACwscBuMBHQLjAR0C4wE= 0x880CC4C
+
+# ── COOL fan sweep, temp=18 ───────────────────────────────────────────────────
+# RESHOOT: f1 here is duplicate of f1 above — re-capture all 5 in one session for consistency
+
+cool 18 f1        C2gL1iXXAR8G1wEnAoADQAHgAw/AF+ADB+APH0AXQAPgAytAC0ATC9cB1wEfBtcBHwbXAQ==  0x880830B
+cool 18 f2        B08LBSbvASIGIAMAAoADQAEAIiAP4BMBQB8AIiAv4AcBACIgN8ADwAFgDyArCyIG7wHvAe8B7wHvAQ== 0x8808394
+cool 18 f3        CTQL9CXxARUG8QHgAwHgBw8BJgLgAQNAAeAHH8ABQBdAA8ABwAtABwsVBvEBJgLxARUG8QE=   0x880832D
+cool 18 f4        CVULBybxARoG8QHgAwHgBw/gBwFAHwEnAoAD4AMBQBfAA0ABQAtAAUArCxoG8QHxAfEBGgbxAQ== 0x88083A5
+cool 18 f5        CYYLCSbtARcG7QFAAQEhAoADQA9AC+APAUAfwAFAJ8ADQBdAA0ABwAdAAUALCxcG7QEXBu0BFwbtAQ== 0x880834F
+
+# ── SWING positions (COOL, fan varies) ───────────────────────────────────────
+# RESHOOT: need all 7 positions with consistent fan=1 and same mode/temp
+
+swing pos1        C2UL2yXWAScG1gEfAuABA+AHD+APG0AnQAPgCx/AF0ABwAsHHwLWAScG1gE=              0x8813149
+swing pos2        CUEL2yXfASMG3wHgAwFADwEoAuANA+ADG0ALQANAAcAvQA9AC+ADB0ALC98B3wEjBt8B3wHfAQ== 0x881315A
+swing pos3        C0gLyiXaASMG2gEaAoADQAHgAw/AF8AH4AMbQAtAA8Ab4AMH4AMX4AMLAxoC2gE=           0x8813048
+swing pos4        C4AL2iXYASQG2AEiAuABA+AHD0ABwB/gAxtAC0ADwBvgAwdAF0ABQAdAAwsiAtgBIgLYASQG2AE= 0x8813059
+swing pos5        C7QLuSXaASAG2gEiAuABA+AHD+APG0AnQAPgAx9AC0ABQBdAA0ABQAcLIgLaASAG2gEiAtoB  0x881306A
+swing pos6        CZUL+CXXAR8G1wFAAQEkAoADQA/AC+AHB+ADG0ALQAPgByNAD0AX4AMDCyQC1wEfBtcBHwbXAQ== 0x881307B
+swing auto        C34L6CXcARkG3AEbAuABA+AHD+APG0AnQAPgAx9AC+AHE0APCxkG3AHcAdwBGwLcAQ==       0x881308C
+swing pos8?       C7ILxyXeARkG3gEjAuABA+AHD+AHG0ABQBNAJ0ADQAvgAwNAE8ABQAvAAwcjAt4BGQbeAQ==   0x881309D  # RESHOOT: unknown position, not in SWING_POS
+
+# RESHOOT: swing pos9 decodes to same hex as pos1 (0x8813149) — likely a misfire, need clean capture
+
+# ── COOL high-temp / fan combos ───────────────────────────────────────────────
+# RESHOOT: temp 30 and 29 only captured as OFF — need wake frames for those too
+# "on" = command frame (bits[10:12]=001), "wake" = wake frame (bits[10:12]=000)
+
+cool 27 f4        C1ALwCXeASAG3gEfAuABA+AHD+ADG0AL4AMfQAFAD0ADQBtAA8ALQAdAAUAHCyAG3gEgBt4B3gHeAQ== 0x8808CAE
+cool 27 f5        C40LzCXWASkG1gEbAuABA+AHD+ADG0AL4AcfQA9AA0AbwAPgAw/gAwsDGwLWAQ==               0x8808C48
+cool 28 f5        C4sL4CXiASYG4gEfAuABA0APQAHgAxPgAwtAH8APQAFAD0ADQBPgAwfAAUATC+IB4gHiAeIBJgbiAQ== 0x8808D49
+
+cool 27 f4 wake   CX4L9CXiASgG4gFAAQEgAoADQA/AC+ADB+ADAeADF0AvQAPAE8ALQAfAAQsoBuIBKAbiAeIB4gE=    0x8800CA6
+cool 27 f5 wake   CygL3SXTASAG0wEhAuABA+AHD+ADG+ALC0AvQAPgAxvgBw8LIQLTASEC0wEhAtMB               0x8800C40
+cool 28 f5 wake   C60LwCXUAR0G1AErAuABA+AHD+ADG+ALC0AvQANAG0AHQAHAB0AT4AMDAx0G1AE=               0x8800D41
+cool 29 f5 wake   CZcLBSbjAR8G4wFAAQMqAuMBQAFAD0AL4BMDwAFAI0AvwANAD0ADQA/gBwEHHwbjAeMB4wE=       0x8800E42
+
+# ── DISPLAY toggle ────────────────────────────────────────────────────────────
+# All 8 captures decode to same frame — toggle, no on/off state
+
+display toggle    CXwL6SX0ARgG9AHgAwHgCw/gBxPgEwFAKwMqAvQBQAfAAQsYBvQBGAb0AfQB9AE=  0x88C00A6
+
+# ── TURBO on + normal send (turbo off) ───────────────────────────────────────
+
+turbo on          CasLxyXbAR8G2wFAAQEfAqADIA8AH8AL4AcH4BMbwCsgIwLbAR8gDQHbAUAFAB8gDwsfAtsBHwLbAR8G2wE= 0x8810089
+turbo off (cool 18 f5)  B2ALtCXbARsGIAMAAuACA+AHD+ADG0AL4A8fQBdAA+AHI0ATCgbbARsG2wEbBtsB  0x880834F
+
+# RESHOOT: capture turbo on/off while AC is in known state (e.g. cool 22 f1) to confirm turbo off = normal frame
+# note: turbo off = normal send_ir() with current state, not a dedicated frame
+
