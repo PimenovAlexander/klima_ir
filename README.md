@@ -8,6 +8,10 @@ Two problems are solved
 
 Disclamer. I use a lot of AI in this project, you will see artefacts of it. That's just as life is now. 
 
+## Протокол
+
+Полная документация IR-протокола Beko 31225/30925 — фреймы, тайминги, кодировка, верифицированные значения: [PROTOCOL.md](PROTOCOL.md)
+
 ## Требования
 
 - Home Assistant с интеграцией MQTT
