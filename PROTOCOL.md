@@ -1,16 +1,13 @@
-# BEKO AC IR Control — Protocol Documentation
+# Beko AC IR Protocol Documentation
 
-## Disclamer
-
-We are in the AI Research phase. Document is unstructured, multilinqual and chaotic.
-I'll try to clean up everything later.
-Soluion, however, works
-
+> Work in progress — reverse-engineered from captures on Beko 31225 / 30925.
+> Solution is functional; document is being cleaned up.
 
 ## Hardware
+
 - **AC unit**: Beko 31225 (protocol likely identical on 30925)
 - **IR blaster**: Moes UFO-R11 (Zigbee, model TS1201, Tuya ZS06-equivalent)
-- **Integration**: Zigbee2MQTT → HA
+- **Integration**: Zigbee2MQTT → Home Assistant
 - **Send command**: `zigbee2mqtt/Black Box IR/set` → `{"ir_code_to_send": "<base64>"}`
 
 ---
@@ -21,35 +18,38 @@ Soluion, however, works
 base64( FastLZ_compress( uint16_le_microseconds[] ) )
 ```
 
-- Timings alternate: MARK (IR on), SPACE (IR off), starting with leader MARK
-- FastLZ must use proper LZ77 back-references — literal-only encoding produces
-  ~122 bytes which exceeds the UFO-R11 Zigbee packet limit (~64-80 bytes) and
-  gets silently truncated. Proper compression yields 28-34 bytes.
-- WiFi Tuya devices skip FastLZ and send raw uint16 base64.
+- Timings alternate: MARK (IR on), SPACE (IR off), starting with leader MARK.
+- FastLZ must use proper LZ77 back-references — literal-only encoding produces ~122 bytes
+  which exceeds the UFO-R11 Zigbee packet limit (~64–80 bytes) and gets silently truncated.
+  Proper compression yields 28–34 bytes.
+- Wi-Fi Tuya devices skip FastLZ and send raw uint16 base64.
+
+See [zigbee2mqtt#29701](https://github.com/Koenkk/zigbee2mqtt/issues/29701) and
+[zigbee2mqtt#26477](https://github.com/Koenkk/zigbee2mqtt/issues/26477) for the truncation bugs.
 
 ---
 
 ## Physical Signal
 
-| Parameter     | Value       |
-|---------------|-------------|
-| Leader mark   | 2940 µs     |
-| Leader space  | 9700 µs     |
-| Bit mark      | 501 µs      |
-| 0-bit space   | 501 µs      |
-| 1-bit space   | 1559 µs     |
-| Trailing mark | 501 µs      |
-| Total timings | 59 (1 + 1 + 28×2 + 1) |
-| Carrier       | 38 kHz      |
-| Protocol      | PDM, proprietary Arçelik/Beko |
+| Parameter     | Value                          |
+|---------------|--------------------------------|
+| Leader mark   | 2940 µs                        |
+| Leader space  | 9700 µs                        |
+| Bit mark      | 501 µs                         |
+| 0-bit space   | 501 µs                         |
+| 1-bit space   | 1559 µs                        |
+| Trailing mark | 501 µs                         |
+| Total timings | 59 (1 + 1 + 28×2 + 1)         |
+| Carrier       | 38 kHz                         |
+| Protocol      | PDM, proprietary Arçelik/Beko  |
 
 ---
 
 ## 28-bit Frame Structure
 
 ```
-Bit pos:  0    4    8  10   13 15  16   20   24   27
-          1000 1000 PP SWG  M  MM  NNNN FFFF CCCC
+Bit pos:  0    4    8  10   13   16   20   24
+          1000 1000 PP FFF  MMM  NNNN FFFF CCCC
 ```
 
 | Bits  | Field      | Values |
@@ -57,23 +57,25 @@ Bit pos:  0    4    8  10   13 15  16   20   24   27
 | 0–7   | Header     | `10001000` = 0x88, fixed |
 | 8–9   | Power      | `00` = ON, `11` = OFF |
 | 10–12 | Frame type | `001` = command, `000` = wake/ON, `010` = swing |
-| 13    | Heat flag  | `0` = не HEAT, `1` = HEAT |
-| 14–15 | Mode ext   | sub-mode bits, see table |
-| 16–19 | Temp hi    | `frame_temp − 15` |
-| 20–23 | Fan        | encoded value, see table |
-| 24–27 | Checksum   | `(fan_val + temp_lo + mode_ext) % 16` |
+| 13–15 | Mode       | 3-bit mode code, see table below |
+| 16–19 | Temp       | `frame_temp − 15` |
+| 20–23 | Fan        | encoded value, see table below |
+| 24–27 | Checksum   | `(fan_val + temp_lo + mode[1:3]) % 16` |
 
-### Mode encoding (bits 13 + 14:16)
+### Mode encoding (bits 13–15)
 
-| Mode     | bits[13] | bits[14:16] | frame_temp      |
-|----------|----------|-------------|-----------------|
-| COOL     | `0`      | `00`        | реальная        |
-| HEAT     | `1`      | `00`        | реальная        |
-| DEHUM    | `0`      | `01`        | `16` (fixed)    |
-| FAN ONLY | `0`      | `10`        | `16` (fixed)    |
-| AUTO     | `0`      | `11`        | реальная        |
+| Mode     | bits[13:16] | frame_temp   |
+|----------|-------------|--------------|
+| COOL     | `000`       | actual       |
+| HEAT     | `100`       | actual       |
+| DEHUM    | `001`       | `16` (fixed) |
+| FAN ONLY | `010`       | `16` (fixed) |
+| AUTO     | `011`       | actual       |
 
-Для DEHUM и FAN ONLY кондей игнорирует температуру — в фрейме всегда `16`.
+For DEHUM and FAN ONLY the AC ignores temperature — frame always carries `16`.
+
+Bit 13 acts as a "heat flag": when set, the checksum uses a different `temp_lo` formula
+(see Checksum section). Bits 14–15 are the sub-mode selector.
 
 ### Fan encoding (bits 20–23)
 
@@ -87,66 +89,67 @@ Bit pos:  0    4    8  10   13 15  16   20   24   27
 
 ### Checksum (bits 24–27)
 
-`chk = (fan_val + temp_lo + mode_ext) % 16`
+```
+chk = (fan_val + temp_lo + mode_ext) % 16
+```
 
-где `mode_ext` = bits[14:16] как целое число (0–3), и:
+where `mode_ext` = bits[14:16] as integer (0–3), and:
 
-| Heat flag | temp_lo formula     |
-|-----------|---------------------|
-| `0`       | `(frame_temp − 7) % 16` |
-| `1`       | `(frame_temp − 3) % 16` |
+| bits[13] | temp_lo formula         |
+|----------|-------------------------|
+| `0`      | `(frame_temp − 7) % 16` |
+| `1`      | `(frame_temp − 3) % 16` |
 
-Для wake-фрейма (bits[10:12]=`000`): `chk = (fan_val + temp_lo + mode_ext − 8) % 16`
+For wake frames (bits[10:12] = `000`): `chk = (fan_val + temp_lo + mode_ext − 8) % 16`
 
 ### OFF frame
 
-OFF is always `0x88C0051` = `1000100011000000000001010001` regardless of
-previous state. The bits[10:12] swing field is `000` (not `001`), which is
-why generating OFF via the normal formula gives the wrong frame — it must be
-hardcoded or generated directly from the hex value.
+OFF is always `0x88C0051` regardless of previous state. bits[10:12] = `000` (not `001`),
+so it cannot be generated by the normal formula — it must be hardcoded.
 
 ---
 
-## Multiple Frame Types
+## Frame Types
 
-The protocol uses **separate frame types** — the AC stores state internally, there is no single "full state" frame.
+The protocol uses separate frame types — the AC stores state internally; there is no single
+"full state" frame.
 
-| bits[10:13] | Type | Contains | Checksum formula |
-|-------------|------|----------|-----------------|
-| `000`       | Wake/ON | power + mode + temp + fan — **включает кондей** | `(fv + tlo - 8) % 16` |
-| `001`       | Command | power + mode + temp + fan — только если **уже включён** | `(fv + tlo) % 16` |
-| `010`       | Swing | vane position only | `(lo + 4 + hi) % 16` |
-| `000`+`11` OFF | OFF | fixed frame `0x88C0051` | — |
+| bits[10:12] | bits[13:16] | Type     | Description                               | Checksum              |
+|-------------|-------------|----------|-------------------------------------------|-----------------------|
+| `000`       | mode        | Wake/ON  | Switches AC on + sets mode/temp/fan       | `(fv + tlo + me − 8) % 16` |
+| `001`       | mode        | Command  | Changes mode/temp/fan (AC must be on)     | `(fv + tlo + me) % 16`     |
+| `010`       | —           | Swing    | Vane position only                        | `(lo + 4 + hi) % 16`       |
+| `000`       | `110` (OFF) | OFF      | Fixed frame `0x88C0051`                   | —                     |
 
-**Ключевое открытие:** тип `000` и `001` отличаются только битом 12 и формулой checksum (разница ровно 8, т.е. инвертирован бит 3 checksum). Версии почему так:
-- Разный звук/поведение при включении vs смене режима
-- Firmware игнорирует тип `001` когда кондей выключен (защита от случайного изменения настроек)
-
-When a parameter changes, only the relevant frame type is sent.
+Wake (`000`) and Command (`001`) differ only in bit 12 and the checksum (difference is exactly 8,
+i.e. bit 3 of checksum is inverted). The AC ignores Command frames when powered off, which prevents
+accidental setting changes.
 
 ---
 
 ## Swing Frame Structure
 
-Swing frames have `bits[10:13]=010`, `bits[14:16]=11`. The position is encoded in `bits[20:24]` as a sequential value. The frame structure is **different** from the main command and cannot be generated by `beko_frame()`.
+Swing frames: bits[10:12] = `010`, bits[13:15] = `11`. Position is encoded in bits[16:24]
+as two nibbles `(hi, lo)`. The frame structure differs from command frames and is not
+generated by `beko_frame()`.
 
-### Swing position codes (captured, COOL, fan varies)
+### Swing positions
 
-| Position | bits[20:24] | Captured base64 |
-|----------|-------------|-----------------|
-| pos1     | 0100 = 4    | `C2UL2yXWAScG1gEfAuABA+AHD+APG0AnQAPgCx/AF0ABwAsHHwLWAScG1gE=` |
-| pos2     | 0101 = 5    | `CUEL2yXfASMG3wHgAwFADwEoAuANA+ADG0ALQANAAcAvQA9AC+ADB0ALC98B3wEjBt8B3wHfAQ==` |
-| pos3     | 0110 = 6    | `C0gLyiXaASMG2gEaAoADQAHgAw/AF8AH4AMbQAtAA8Ab4AMH4AMX4AMLAxoC2gE=` |
-| pos4     | 0111 = 7    | `C4AL2iXYASQG2AEiAuABA+AHD0ABwB/gAxtAC0ADwBvgAwdAF0ABQAdAAwsiAtgBIgLYASQG2AE=` |
-| pos5     | 1000 = 8    | `C7QLuSXaASAG2gEiAuABA+AHD+APG0AnQAPgAx9AC0ABQBdAA0ABQAcLIgLaASAG2gEiAtoB` |
-| pos6     | 1001 = 9    | `CZUL+CXXAR8G1wFAAQEkAoADQA/AC+AHB+ADG0ALQAPgByNAD0AX4AMDCyQC1wEfBtcBHwbXAQ==` |
-| auto     | 1010 = 10   | `C34L6CXcARkG3AEbAuABA+AHD+APG0AnQAPgAx9AC+AHE0APCxkG3AHcAdwBGwLcAQ==` |
+| Position | hi | lo | Encoded bits[20:24] |
+|----------|----|----|---------------------|
+| pos1     | 0  | 2  | —                   |
+| pos2     | 0  | 3  | —                   |
+| pos3     | 0  | 4  | —                   |
+| pos4     | 0  | 5  | —                   |
+| pos5     | 0  | 6  | —                   |
+| pos6     | 0  | 7  | —                   |
+| auto     | 1  | 4  | —                   |
 
-Swing codes are generated via formula, not lookup table. SWING_POS values are user-configured based on physical testing.
+Checksum: `(lo + 4 + hi) % 16`
 
 ---
 
-## Python Generator (verified on 31 captures)
+## Python Generator (verified on 31+ captures)
 
 ```python
 FAN_VALS = {1: 0, 2: 9, 3: 2, 4: 10, 5: 4}
@@ -159,17 +162,9 @@ MODE_BITS = {
     "fan_only": (0, 0b10),
     "auto":     (0, 0b11),
 }
-# dehum и fan_only игнорируют температуру
 MODE_FIXED_TEMP = {"dehum": 16, "fan_only": 16}
 
 def beko_frame(mode, temp, fan, wake=False):
-    """
-    mode:  'cool' | 'heat' | 'dehum' | 'fan_only' | 'auto'
-    temp:  16–30 (°C), игнорируется для dehum и fan_only
-    fan:   1–5
-    wake:  True = включение кондея (bits[10:12]=000)
-           False = команда работающему (bits[10:12]=001)
-    """
     mode_b, mb = MODE_BITS[mode]
     frame_temp = MODE_FIXED_TEMP.get(mode, temp)
     swg  = 0b000 if wake else 0b001
@@ -180,54 +175,55 @@ def beko_frame(mode, temp, fan, wake=False):
     return (0b10001000 << 20 | 0b00 << 18 | swg << 15 | mode_b << 14 |
             mb << 12 | n4 << 8 | fv << 4 | chk)
 
-OFF_FRAME = 0x88C0051  # фиксированный, bits[10:12]=000
+OFF_FRAME = 0x88C0051  # fixed, bits[10:12]=000
 ```
 
 ---
 
 ## Special Fixed Frames
 
-| Command        | Hex          | bits[10:13] | bits[14:16] | Note |
+| Command        | Hex          | bits[10:12] | bits[13:16] | Note |
 |----------------|--------------|-------------|-------------|------|
-| OFF            | `0x88C0051`  | `000`       | `00`        | фиксированный |
-| Display toggle | `0x88C00A6`  | `000`       | `00`        | toggle подсветки, верифицирован 6 захватами |
-| Turbo ON       | `0x8810089`  | `010`       | `00`        | быстрый режим ON |
-| Turbo OFF      | —            | —           | —           | = обычный send_ir() с текущим state |
-
-## Verified Generated Hex Values
-
-| Command       | Hex         |
-|---------------|-------------|
-| OFF           | `0x88C0051` |
-| COOL 18° fan1 | `0x880830B` |
-| COOL 19° fan1 | `0x880840C` |
-| COOL 22° fan1 | `0x880870F` |
-| COOL 26° fan1 | `0x8808B03` |
-| HEAT 16° fan1 | `0x880C10D` |
-| HEAT 20° fan1 | `0x880C501` |
-| HEAT 27° fan1 | `0x880CC08` |
-| HEAT 27° fan2 | `0x880CC91` |
-| HEAT 27° fan3 | `0x880CC2A` |
-| HEAT 27° fan4 | `0x880CCA2` |
-| HEAT 27° fan5 | `0x880CC4C` |
+| OFF            | `0x88C0051`  | `000`       | `110`       | fixed |
+| Display toggle | `0x88C00A6`  | `000`       | `110`       | backlight toggle, verified on 6 captures |
+| Turbo ON       | `0x8810089`  | `010`       | `000`       | fast mode ON |
+| Turbo OFF      | —            | —           | —           | = normal send_ir() with current state |
 
 ---
 
-## What Was Found in Research
+## Verified Generated Hex Values
 
-### UFO-R11 packet size limit (root cause of failures)
-- **Issue #29701** (zigbee2mqtt): UFO-R11 / ZS06 silently truncates IR codes
-  that require more than 2 Zigbee chunks (~64-80 compressed bytes).
-  Literal-only FastLZ produces 122 bytes → 3 chunks → truncated.
-  Proper LZ77 produces 28-34 bytes → 1 chunk → accepted.
-- **Issue #26477** (zigbee2mqtt): IR codes >255 chars base64 fail.
+| Command        | Hex         |
+|----------------|-------------|
+| OFF            | `0x88C0051` |
+| COOL 18° fan1  | `0x880830B` |
+| COOL 19° fan1  | `0x880840C` |
+| COOL 22° fan1  | `0x880870F` |
+| COOL 26° fan1  | `0x8808B03` |
+| HEAT 16° fan1  | `0x880C10D` |
+| HEAT 20° fan1  | `0x880C501` |
+| HEAT 27° fan1  | `0x880CC08` |
+| HEAT 27° fan2  | `0x880CC91` |
+| HEAT 27° fan3  | `0x880CC2A` |
+| HEAT 27° fan4  | `0x880CCA2` |
+| HEAT 27° fan5  | `0x880CC4C` |
 
-### Protocol origin
-- IRremoteESP8266: only Beko BINR 070/071 on Coolix (24-bit, different timings)
-- Flipper-IRDB: only Beko BRVPF120 (leader 4455/4310µs, different protocol)
-- SmartIR: only BEVCA 120 (Broadlink format, different model)
-- Hex values `0x880069F` / `0x88C0051` return **zero matches** on GitHub
-- **This protocol is undocumented** — first public reverse engineering
+---
+
+## MQTT Topics
+
+Format: `beko/<device>/set/<command>`
+
+| Topic                          | Payload              | Description         |
+|--------------------------------|----------------------|---------------------|
+| `beko/<dev>/set/mode`          | `off/cool/heat/dehum/fan_only/auto` | Mode    |
+| `beko/<dev>/set/temperature`   | `16`–`30`            | Set temperature     |
+| `beko/<dev>/set/temp_up`       | `1`                  | Temperature +1°C    |
+| `beko/<dev>/set/temp_down`     | `1`                  | Temperature −1°C    |
+| `beko/<dev>/set/fan_mode`      | `1`–`5`              | Fan speed           |
+| `beko/<dev>/set/swing`         | `pos1`–`pos6`, `auto` | Vane position      |
+| `beko/<dev>/set/display`       | `toggle`             | Backlight toggle    |
+| `beko/<dev>/set/turbo`         | `on` / `off`         | Turbo mode          |
 
 ---
 
@@ -236,74 +232,42 @@ OFF_FRAME = 0x88C0051  # фиксированный, bits[10:12]=000
 | Question | Status |
 |----------|--------|
 | Swing: position or increment? | Unknown — needs testing |
-| Auto fan mode | fan_val unknown |
-| Dry / Fan-only modes | bits[13] value unknown — need captures |
-| Temperature range upper limit | likely 30°C |
-| Swing frame: does temp/fan matter? | Decoded temp/fan don't match main formula — different encoding or unused |
-| Commands work only when AC is ON | Confirmed — AC must be powered on to accept mode/temp/fan commands |
+| Auto fan mode encoding | Unknown |
+| Temperature range upper limit | Likely 30°C |
+| Does temp/fan matter in swing frame? | Decoded values don't match main formula — may be unused |
 
 ---
 
-## HA Integration
+## Prior Art
 
-### Architecture
-```
-HA UI (climate.beko_ac)
-    ↓ mqtt publish
-beko/set/mode, beko/set/temperature, beko/set/fan_mode
-    ↓ @mqtt_trigger (pyscript/beko_ir.py)
-generates 28-bit frame → FastLZ compress → base64
-    ↓ mqtt publish
-zigbee2mqtt/Black Box IR/set  {"ir_code_to_send": "..."}
-    ↓ Zigbee
-UFO-R11 → IR 38kHz → Beko 31225
-```
+Extensive search found no existing documentation for this protocol:
 
-### Files
-- `pyscript/beko_ir.py` — IR generator + MQTT triggers
-- `configuration.yaml` — mqtt climate entity + pyscript config
+- **IRremoteESP8266**: only Beko BINR 070/071 — Coolix-compatible 24-bit frame (leader 9150/4150 µs). Different protocol entirely.
+- **Flipper-IRDB**: only Beko BRVPF120 — different timings (4455/4310 µs leader).
+- **SmartIR**: only BEVCA 120 in Broadlink format, different model.
+- **GitHub code search**: hex values `0x880069F` / `0x88C0051` return zero matches.
 
-### Entities
-- `climate.beko_ac` — mode, temperature, fan, swing
-- `button.beko_ac_display` — toggle подсветки
-- `switch.beko_ac_turbo` — быстрый режим
-
-### Topics
-| Topic | Direction | Description |
-|-------|-----------|-------------|
-| `beko/set/mode` | HA→pyscript | off/cool/heat |
-| `beko/set/temperature` | HA→pyscript | 16-30 |
-| `beko/set/fan_mode` | HA→pyscript | 1-5 |
-| `beko/set/swing` | HA→pyscript | pos1-6/auto |
-| `beko/set/display` | HA→pyscript | toggle |
-| `beko/set/turbo` | HA→pyscript | on/off |
-| `beko/state/*` | pyscript→HA | state feedback (reset to unknown after 0.5s) |
-| `zigbee2mqtt/Black Box IR/set` | pyscript→Z2M | IR payload |
-
-### Wake logic
-- `prev_mode == "off"` → `wake=True` → фрейм с `bits[10:13]=000`, chk = `(fv+tlo-8)%16`
-- иначе → `wake=False` → фрейм с `bits[10:13]=001`, chk = `(fv+tlo)%16`
-
-### State feedback trick
-После каждой команды pyscript публикует реальное состояние в `beko/state/*`, затем через 0.5с сбрасывает в `""`. Это заставляет Lovelace frontend всегда разрешать повторное нажатие той же кнопки (обход guard `value === oldValue` в hui-mode-select-card-feature-base.ts).
+This appears to be the first public reverse engineering of this specific Arçelik/Beko 28-bit PDM protocol.
 
 ---
 
 ## Contribution Targets
 
 1. **SmartIR** JSON (`codes/climate/`) — no code required, helps Broadlink users
-2. **Flipper-IRDB** `.ir` file — raw timings, trivial
+2. **Flipper-IRDB** `.ir` file — raw timings, straightforward
 3. **IRremoteESP8266** C++ PR — canonical, unlocks ESPHome + Tasmota
-4. **ESPHome** climate component — after step 3
+4. **ESPHome** climate component — depends on step 3
 
 ---
 
-## Reference Links
+## References
+
 - [mildsunrise — Tuya IR / FastLZ format](https://gist.github.com/mildsunrise/1d576669b63a260d2cff35fda63ec0b5)
-- [UFO-R11 truncation bug #29701](https://github.com/Koenkk/zigbee2mqtt/issues/29701)
-- [UFO-R11 >255 char limit #26477](https://github.com/Koenkk/zigbee2mqtt/issues/26477)
-- [pasthev/irtuya](https://github.com/pasthev/irtuya) / [web app](https://irtuya.streamlit.app/)
-- [SmartIR + UFO-R11 guide](https://community.home-assistant.io/t/guide-how-to-use-the-zs06-or-ufo-r11-zigbee-ir-controllers-with-smartir/939301)
-- [Kelon168 — Jinja2 IR generation in HA](https://community.home-assistant.io/t/control-kelon-electra-tadiran-ac-with-tuya-ir-blaster-fully-reverse-engineered-kelon168-protocol/1012947)
-- [IRremoteESP8266 — new AC protocol guide](https://github.com/crankyoldgit/IRremoteESP8266/wiki/Adding-support-for-a-new-AC-protocol)
-- [Zigbee2MQTT UFO-R11](https://www.zigbee2mqtt.io/devices/UFO-R11.html)
+- [zigbee2mqtt#29701 — UFO-R11 silent truncation bug](https://github.com/Koenkk/zigbee2mqtt/issues/29701)
+- [zigbee2mqtt#26477 — IR codes >255 chars fail](https://github.com/Koenkk/zigbee2mqtt/issues/26477)
+- [pasthev/irtuya](https://github.com/pasthev/irtuya) — Tuya IR decode/encode tool
+- [irtuya web app](https://irtuya.streamlit.app/)
+- [SmartIR + UFO-R11 integration guide](https://community.home-assistant.io/t/guide-how-to-use-the-zs06-or-ufo-r11-zigbee-ir-controllers-with-smartir/939301)
+- [Kelon/Electra/Tadiran AC — Jinja2 IR generation example](https://community.home-assistant.io/t/control-kelon-electra-tadiran-ac-with-tuya-ir-blaster-fully-reverse-engineered-kelon168-protocol/1012947)
+- [IRremoteESP8266 — adding new AC protocol guide](https://github.com/crankyoldgit/IRremoteESP8266/wiki/Adding-support-for-a-new-AC-protocol)
+- [Zigbee2MQTT UFO-R11 device page](https://www.zigbee2mqtt.io/devices/UFO-R11.html)
