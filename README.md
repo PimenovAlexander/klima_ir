@@ -142,6 +142,15 @@ Tested with:
   - [Beko 31225](https://www.beko.com.tr/split-klima/31225-ekolojik-klima)
   - [Beko 30925](https://www.beko.com.tr/split-klima/30925-ekolojik-klima)
 
+ Shares the same remote (5401568401-5401552301) as
+ 
+ - BEKO
+   - Beko 30925
+   - Beko 31225
+   - Beko 31825
+ - arcelik (see list in the link below)
+   - https://www.umurstore.com.tr/arcelik-inverter-yeni-tip-klima-kumanda-5401568401-5401552301-arcelik-orjinal
+
 ## Debugging
 
 Check that pyscript loaded:
