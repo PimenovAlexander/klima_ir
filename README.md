@@ -16,8 +16,15 @@ Disclamer. I use a lot of AI in this project, you will see artefacts of it. That
 
 - Home Assistant с интеграцией MQTT
 - Zigbee2MQTT
-- IR-бластер Moes UFO-R11 (Zigbee, model TS1201) — по одному на каждый кондей
 - pyscript custom component (`hacs` или вручную)
+
+## Сложности
+
+ Система совершенно спокойно может быть переписана для того что управлять ей с виджета clima,
+ но только есть неудобство в виде того что нельзя повторить с UI посылку уже отправленного состояния
+ с этим связано то что я собираю dashboard из кнопок.
+    Возможно я что-то не изучил до конца
+
 
 ## Файлы
 
@@ -126,6 +133,21 @@ docker restart homeassistant
 2. Добавь entities в `packages/beko.yaml` по аналогии с `kabinet` / `salon`
 3. Добавь карточку в `lovelace-beko.yaml`
 4. Задеплой `beko_ir.py`, скопируй обновлённый `packages/beko.yaml`, перезапусти HA
+
+## Поддерживаемое железо
+
+Проверено на
+- IR-бластеры
+  - Moes UFO-R11 (Zigbee, model TS1201)
+  - Model iH-F8260 Universal smart IR remote control (Tuya)
+
+- Кондиционеры
+  - https://www.beko.com.tr/split-klima/31225-ekolojik-klima
+  - https://www.beko.com.tr/split-klima/30925-ekolojik-klima
+
+## Описание протокола
+
+
 
 ## Отладка
 
