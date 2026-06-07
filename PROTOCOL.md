@@ -1,5 +1,12 @@
 # BEKO AC IR Control — Protocol Documentation
 
+## Disclamer
+
+We are in the AI Research phase. Document is unstructured, multilinqual and chaotic.
+I'll try to clean up everything later.
+Soluion, however, works
+
+
 ## Hardware
 - **AC unit**: Beko 31225 (protocol likely identical on 30925)
 - **IR blaster**: Moes UFO-R11 (Zigbee, model TS1201, Tuya ZS06-equivalent)
