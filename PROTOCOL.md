@@ -151,6 +151,16 @@ Checksum: `(lo + 4 + hi) % 16`
 Verified across two independent capture sessions (fan=2 and fan=3, different temperatures) —
 swing frame is independent of mode, temperature, and fan speed.
 
+### Yumişak (Soft Air) button
+
+The remote has a dedicated **Yumişak Hava** ("soft air") button that toggles the vane between
+pos1 (down) and pos6 (horizontal/up). It is a marketing feature — indirect airflow avoids cold
+air blowing directly on people by sending it toward the ceiling first, where it mixes with warm
+air before descending. The remote highlights the icon while "soft" mode is active.
+
+In the IR protocol this is not a separate frame type — it is just two alternating swing commands:
+`pos1 → pos6 → pos1 → …`. No special handling required.
+
 ### Captured base64 (reference)
 
 | Position | hex         | Base64 |
@@ -205,6 +215,12 @@ OFF_FRAME = 0x88C0051  # fixed, bits[10:12]=000
 | Display toggle | `0x88C00A6`  | `000`       | `110`       | backlight toggle, verified on 6 captures |
 | Turbo ON       | `0x8810089`  | `010`       | `000`       | fast mode ON |
 | Turbo OFF      | —            | —           | —           | = normal send_ir() with current state |
+| Sessiz ON      | `0x88C0A6C`  | `000`       | `000`       | outdoor unit silent mode ON |
+| Sessiz OFF     | `0x88C0A7D`  | `000`       | `000`       | outdoor unit silent mode OFF |
+
+OFF, Display, and Sessiz share the same frame class: `power=11, type=000`. The remaining
+bits are not mode/temp/fan — they carry a fixed command payload. Sessiz reduces noise of
+the outdoor unit (compressor + fan); the AC beeps to confirm the command was received.
 
 ---
 

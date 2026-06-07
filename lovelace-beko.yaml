@@ -68,7 +68,7 @@ views:
           - type: entities
             entities:
               - entity: input_number.beko_kabinet_temp
-                name: "Температура"
+                name: "Temperature"
 
           - type: horizontal-stack
             cards:
@@ -210,6 +210,12 @@ views:
                 icon: mdi:rocket-launch
                 tap_action:
                   action: toggle
+              - type: button
+                entity: switch.kabinet_ac_sessiz
+                name: "Silent"
+                icon: mdi:volume-off
+                tap_action:
+                  action: toggle
 
       # ── Salon ─────────────────────────────────────────────────────────────────
       - type: vertical-stack
@@ -277,7 +283,7 @@ views:
           - type: entities
             entities:
               - entity: input_number.beko_salon_temp
-                name: "Температура"
+                name: "Temperature"
 
           - type: horizontal-stack
             cards:
@@ -417,5 +423,11 @@ views:
                 entity: switch.salon_ac_turbo
                 name: "Turbo"
                 icon: mdi:rocket-launch
+                tap_action:
+                  action: toggle
+              - type: button
+                entity: switch.salon_ac_sessiz
+                name: "Silent"
+                icon: mdi:volume-off
                 tap_action:
                   action: toggle

@@ -135,6 +135,8 @@ def swing_frame(pos):
 OFF_CODE     = _frame_to_base64(0x88C0051)
 DISPLAY_CODE = _frame_to_base64(0x88C00A6)
 TURBO_CODE   = _frame_to_base64(0x8810089)
+SESSIZ_ON    = _frame_to_base64(0x88C0A6C)
+SESSIZ_OFF   = _frame_to_base64(0x88C0A7D)
 
 SWING_POS = {
     "pos1": (0, 4),
@@ -272,3 +274,16 @@ def on_turbo(topic, payload, **kwargs):
         states[dev]["turbo"] = False
         _send_ir(dev)
         log.info(f"Beko [{dev}]: turbo OFF")
+
+
+@mqtt_trigger("beko/+/set/sessiz")
+def on_sessiz(topic, payload, **kwargs):
+    dev = _device_from_topic(topic)
+    if not dev:
+        return
+    if payload == "on":
+        _publish(dev, SESSIZ_ON)
+        log.info(f"Beko [{dev}]: sessiz ON")
+    else:
+        _publish(dev, SESSIZ_OFF)
+        log.info(f"Beko [{dev}]: sessiz OFF")

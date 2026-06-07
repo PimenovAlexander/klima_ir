@@ -286,10 +286,17 @@ mqtt:
 
   switch:
     - name: "Kabinet AC Turbo"
-
       unique_id: beko_kabinet_turbo
       optimistic: true
       command_topic: "beko/kabinet/set/turbo"
+      payload_on: "on"
+      payload_off: "off"
+      availability_topic: "beko/available"
+
+    - name: "Kabinet AC Sessiz"
+      unique_id: beko_kabinet_sessiz
+      optimistic: true
+      command_topic: "beko/kabinet/set/sessiz"
       payload_on: "on"
       payload_off: "off"
       availability_topic: "beko/available"
@@ -298,6 +305,14 @@ mqtt:
       unique_id: beko_salon_turbo
       optimistic: true
       command_topic: "beko/salon/set/turbo"
+      payload_on: "on"
+      payload_off: "off"
+      availability_topic: "beko/available"
+
+    - name: "Salon AC Sessiz"
+      unique_id: beko_salon_sessiz
+      optimistic: true
+      command_topic: "beko/salon/set/sessiz"
       payload_on: "on"
       payload_off: "off"
       availability_topic: "beko/available"
