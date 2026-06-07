@@ -1,6 +1,12 @@
 # Beko AC IR Control — Home Assistant Integration
 
-Управление кондиционерами Beko 31225/30925 через IR-бластер Moes UFO-R11 (Zigbee).
+This is a heavy WIP for Beko 31225/30925 control with IR-blaster Moes UFO-R11 (Zigbee).
+Two problems are solved 
+
+  * Encode logical state into IR-blaster format
+  * Intergrate solution with HA
+
+Disclamer. I use a lot of AI in this project, you will see artefacts of it. That's just as life is now. 
 
 ## Требования
 
