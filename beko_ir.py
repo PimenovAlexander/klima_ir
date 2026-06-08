@@ -112,23 +112,27 @@ MODE_BITS = {
 MODE_FIXED_TEMP = {"dehum": 16, "fan_only": 16}
 
 
+def _chk(frame: int) -> int:
+    """LG/Beko universal checksum: sum of nibbles [4:28] mod 16."""
+    s = frame >> 4
+    return ((s) + (s >> 4) + (s >> 8) + (s >> 12)) & 0xF
+
+
 def beko_frame(mode, temp, fan, wake=False):
     mode_b, mb = MODE_BITS[mode]
     frame_temp = MODE_FIXED_TEMP.get(mode, temp)
     swg  = 0b000 if wake else 0b001
     n4   = frame_temp - 15
     fv   = FAN_VALS[fan]
-    tlo  = (frame_temp - 7) % 16 if mode_b == 0 else (frame_temp - 3) % 16
-    chk  = (fv + tlo + mb - (8 if wake else 0)) % 16
-    return (0b10001000 << 20 | 0b00 << 18 | swg << 15 | mode_b << 14 |
-            mb << 12 | n4 << 8 | fv << 4 | chk)
+    f    = (0b10001000 << 20 | 0b00 << 18 | swg << 15 | mode_b << 14 |
+            mb << 12 | n4 << 8 | fv << 4)
+    return f | _chk(f)
 
 
 def swing_frame(pos):
     hi, lo = SWING_POS[pos]
-    chk = (lo + 4 + hi) & 0xF
-    return (0b10001000 << 20 | 0b010 << 15 | 0b11 << 12 |
-            hi << 8 | lo << 4 | chk)
+    f = (0b10001000 << 20 | 0b010 << 15 | 0b11 << 12 | hi << 8 | lo << 4)
+    return f | _chk(f)
 
 
 # ── предвычисленные фиксированные коды ─────────────────────────────────────

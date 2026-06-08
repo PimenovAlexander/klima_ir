@@ -12,6 +12,19 @@ Two problems are solved:
 
 Full IR protocol documentation for Beko 31225 / 30925 — frames, timings, encoding, verified hex values: [PROTOCOL.md](PROTOCOL.md)
 
+**TL;DR — it's the LG A/C protocol.**
+After reverse engineering the protocol from scratch, it turned out to be identical to the LG A/C protocol
+already documented and implemented in
+[IRremoteESP8266 `ir_LG.h`](https://github.com/crankyoldgit/IRremoteESP8266/blob/master/src/ir_LG.h).
+Every constant matches: the `0x88` signature byte, power/mode/fan/temp encoding, fan speed values
+(0/9/2/10/4), the OFF frame `0x88C0051`, the display toggle `0x88C00A6`, and the swing frame series
+`0x8813xxx`. Arçelik/Beko ships LG-protocol AC units without modification.
+
+The Beko-specific quirks not covered by the LG implementation:
+- Wake frame (`bits[10:12]=000`) vs command frame (`001`), checksum differs by 8
+- Fixed temperature encoding for DEHUM and FAN ONLY modes
+- Sessiz (outdoor silent mode) fixed frames `0x88C0A6C` / `0x88C0A7D`
+
 ## Requirements
 
 - Home Assistant with MQTT integration
